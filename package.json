@@ -9,19 +9,33 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "@tabler/icons-react": "^3.30.0",
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.4",
+    "axios": "^1.8.1",
+    "bcrypt": "^5.1.1",
+    "crypto": "^1.0.1",
+    "google-libphonenumber": "^3.2.40",
+    "jose": "^6.0.8",
+    "next": "15.2.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "15.2.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/bcrypt": "^5.0.2",
+    "@types/google-libphonenumber": "^7.4.30",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
-    "@eslint/eslintrc": "^3"
+    "i": "^0.3.7",
+    "npm": "^11.2.0",
+    "prisma": "^6.4.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
