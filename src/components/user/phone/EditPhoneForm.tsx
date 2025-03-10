@@ -1,30 +1,25 @@
 'use client'
-import { ChangeEvent, useActionState, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import AlertError from '@/components/AlertError';
 import { validationForPhoneNumber } from "@/lib/seculity/validation";
-import { editPhoneFormAction } from "@/actions/phoneActions";
 import EditPhoneConfirm from "./EditPhoneConfirm";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import SpinnerModal from "@/components/SpinnerModal";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL as string;
 
 export default function EditPhoneForm({
     phoneLastNumber
  }:{
     phoneLastNumber:string
  }) {
-    const [state, formAction, isPending] = useActionState(
-        editPhoneFormAction,
-        {
-            errMsg:'',
-        }
-    );
+    const router = useRouter();
+    const [loading,setLoading] = useState(false);
+    const [error,setError] = useState('');
     const [phoneForm,setPhoneForm] = useState({
       phoneNumber:['',''],//[値,エラー文字]
     });
     const [processNum,setProcessNum] = useState<1|2>(1);
-
-    useEffect(() => {
-        //・phoneForm.phoneNumber[0]　← この判定が無いと初回レンダリング時に、processNumが2に更新されてしまう
-        if(phoneForm.phoneNumber[0] && !state.errMsg && !isPending)setProcessNum(2);
-    }, [isPending]);
 
     const handleChange = (e:ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => {
         const inputName = e.target.name;
@@ -32,30 +27,61 @@ export default function EditPhoneForm({
         setPhoneForm({...phoneForm,[inputName]:[inputVal,'']})
     }
 
-    const handleAction = (formData:FormData) => {
+    const handleSubmmit = async(e:FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setLoading(true);//ローディング状態でボタンを非活性に
+        setError('');
+    
         ///////////
-        //◆【formDataのバリデーション】
+        //◆【バリデーション】
         const {phoneNumber} = phoneForm;
-        //phoneNumber
         const result = validationForPhoneNumber(phoneNumber[0]);
         if( !result.result ){
             phoneNumber[1]=result.message;
             setPhoneForm({phoneNumber});
+            setLoading(false);
             return alert('入力内容に問題があります');
         }
-        ///////////
-        //■[ signInを実行 ]
-        formAction(formData)
+
+        //////////
+        //◆【通信】
+        try {
+            await axios.put(
+                `${apiUrl}/user/phone`,
+                {
+                    phoneNumber:phoneNumber[0],
+                }
+            );
+            setProcessNum(2);
+        } catch (err) { 
+            let message = 'Something went wrong. Please try again.';
+            if (axios.isAxiosError(err)) {
+                if(err.response?.data.message)message = err.response.data.message;
+                //401,Authentication failed.
+                if(err.response?.status && err.response.status===401){
+                    setLoading(false);
+                    alert(message);
+                    router.push('/auth');
+                    return;
+                }
+            } else if (err instanceof Error) {
+                message = err.message;
+            }
+            alert(message);
+            setError(message);
+        }
+        setLoading(false);
     }
 
     return (<>
         <div className="flex items-center justify-center mt-5">
             <div className="flex flex-col items-center justify-center w-full max-w-md">
+                {loading && <SpinnerModal/>}
+                {error && <AlertError errMessage={error} reloadBtFlag={true}/>}
                 {processNum===1
                     ?(<> 
-                        {state.errMsg && <AlertError errMessage={state.errMsg} reloadBtFlag={false}/>}
                         <form
-                            action={handleAction}
+                            onSubmit={handleSubmmit}
                             className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md"
                         >
                             <div className="mb-4">
@@ -78,18 +104,25 @@ export default function EditPhoneForm({
                             <div className='flex items-center justify-between'> 
                                 <button
                                     className={`
-                                    bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
-                                    ${isPending&&'cursor-not-allowed'}
+                                        bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
+                                        ${loading&&'cursor-not-allowed'}
                                     `}
-                                    disabled={isPending}
+                                    disabled={loading}
                                     type="submit"
                                 >
-                                    {isPending ? '・・Loading・・' : 'Update'}
+                                    {loading ? '・・Loading・・' : 'Update'}
                                 </button>
                             </div>
                         </form>
                     </> ):(
-                        <EditPhoneConfirm phoneNumber={phoneForm.phoneNumber[0]} setProcessNum={setProcessNum}/>
+                        <EditPhoneConfirm 
+                            apiUrl={apiUrl}
+                            phoneNumber={phoneForm.phoneNumber[0]} 
+                            setProcessNum={setProcessNum}
+                            setError={setError}
+                            loading={loading}
+                            setLoading={setLoading}
+                        />
                     )
                 }
             </div>

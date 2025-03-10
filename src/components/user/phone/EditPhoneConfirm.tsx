@@ -1,33 +1,27 @@
-import { ChangeEvent, Dispatch, SetStateAction, useActionState, useEffect, useState } from "react";
-import AlertError from '@/components/AlertError';
-import { editPhoneConfirm } from '@/actions/phoneActions';
+import { ChangeEvent, Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { validationForAuthenticationPassword } from "@/lib/seculity/validation";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const EditPhoneConfirm = ({
+    apiUrl,
     phoneNumber,
     setProcessNum,
+    setError,
+    loading,
+    setLoading,
 }:{
+    apiUrl:string
     phoneNumber:string
     setProcessNum:Dispatch<SetStateAction<1 | 2>>
+    setError:Dispatch<SetStateAction<string>>
+    loading:boolean
+    setLoading: Dispatch<SetStateAction<boolean>>
 }) => {
-    const editPhoneConfirmWithPhoneNumber = editPhoneConfirm.bind(null, phoneNumber);
-    const [state, formAction,isPending] = useActionState(
-        editPhoneConfirmWithPhoneNumber,
-        {
-            errMsg:'',
-        }
-    );
+    const router = useRouter();
     const [smsForm,setSmsForm] = useState({
         authenticationPassword:['',''],//[値,エラー文字]
     });
-
-    useEffect(() => {
-        //・smsForm.authenticationPassword[0]　← この判定が無いと初回レンダリング時に、processNumが1に更新されてしまう
-        if(smsForm.authenticationPassword[0] && !state.errMsg && !isPending){
-            alert('Success!');
-            setProcessNum(1);
-        }
-    }, [isPending]);
 
     const handleChange = (e:ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => {
         const inputName = e.target.name;
@@ -35,20 +29,53 @@ const EditPhoneConfirm = ({
         setSmsForm({...smsForm,[inputName]:[inputVal,'']})
     }
 
-    const handleAction = (formData:FormData) => {
+    const handleSubmit = async(e:FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setLoading(true);//ローディング状態でボタンを非活性に
+        setError('');
+    
         ///////////
-        //◆【formDataのバリデーション】
+        //■[ formDataのバリデーション ]
         const {authenticationPassword} = smsForm;
         //authenticationPassword
         const {result,message} = validationForAuthenticationPassword(authenticationPassword[0]);
         if( !result ){
             authenticationPassword[1]=message;
             setSmsForm({authenticationPassword});
+            setLoading(false);
             return alert('入力内容に問題があります');
         }
-        ///////////
-        //■[ EditPhoneConfirmを実行 ]
-        formAction(formData)
+
+        //////////
+        //■[ 通信 ]
+        try {
+            await axios.patch(
+                `${apiUrl}/user/phone`,
+                {
+                    authenticationPassword:authenticationPassword[0],
+                    phoneNumber,
+                }
+            );
+            alert('Success.')
+            setProcessNum(1);
+        } catch (err) { 
+            let message = 'Something went wrong. Please try again.';
+            if (axios.isAxiosError(err)) {
+                if(err.response?.data.message)message = err.response.data.message;
+                //401,Authentication failed.
+                if(err.response?.status && err.response.status===401){
+                    setLoading(false);
+                    alert(message);
+                    router.push('/auth');
+                    return;
+                }
+            } else if (err instanceof Error) {
+                message = err.message;
+            }
+            alert(message);
+            setError(message);
+        }
+        setLoading(false);
     }
 
     return(<>
@@ -57,11 +84,8 @@ const EditPhoneConfirm = ({
                 <p className='text-red-600 text-center'>
                     ☎{phoneNumber}<br/>認証パスワードを送信しました
                 </p>
-
-                {state.errMsg && <AlertError errMessage={state.errMsg} reloadBtFlag={true}/>}
-
                 <form 
-                    action={handleAction}
+                    onSubmit={handleSubmit}
                     className="mt-3 bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md"
                 >
                     <input
@@ -90,13 +114,13 @@ const EditPhoneConfirm = ({
                     <div className='flex items-center justify-between'>
                         <button
                             className={`
-                            bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
-                            ${isPending&&'cursor-not-allowed'}
+                                bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
+                                ${loading&&'cursor-not-allowed'}
                             `}
-                            disabled={isPending}
+                            disabled={loading}
                             type="submit"
                         >
-                            {isPending ? '・・Loading・・' : 'Submit'}
+                            {loading ? '・・Loading・・' : 'Submit'}
                         </button>
                     </div>
                 </form>

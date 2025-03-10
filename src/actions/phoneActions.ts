@@ -59,8 +59,8 @@ export const editPhoneFormAction = async (state: EditPhoneState, formData: FormD
 
         //////////
         //■[ rateLimit ] ← 何度も更新されたら、vonageの利用料金が嵩むのでrateLimitで保護
-        // const {success,message} = await rateLimit()
-        // if(!success) return {...state, errMsg:message};
+        const {success,message} = await rateLimit()
+        if(!success) return {...state, errMsg:message};
         
         //////////
         //■[ セキュリティー ]
@@ -81,27 +81,27 @@ export const editPhoneFormAction = async (state: EditPhoneState, formData: FormD
         const result = validationForPhoneNumber(phoneNumber);
         if(!result.result) return {errMsg:'Bad request error.'};
 
-        // //////////
-        // //■[ 現在の電話番号の値と比較～同じなら更新不要 ]
-        // //・phoneNumber
-        // const checkUser = await prisma.user.findUnique({
-        //     where:{
-        //         id:user.id
-        //     }
-        // });
-        // if(!checkUser)return {errMsg:'Something went wrong.'};//checkUserの型を確定させる
-        // const headNumber7 = phoneNumber.slice(0,7);
-        // const lastNumber4 = phoneNumber.slice(-4);
-        // const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
-        // const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
-        // if(lastNumber4===hashedLastNumber4){
-        //     try{
-        //         const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
-        //         if(result)return {errMsg:'The same phone number as the one currently registered.'};
-        //     }catch(err){
-        //         throw err;
-        //     }
-        // }
+        //////////
+        //■[ 現在の電話番号の値と比較～同じなら更新不要 ]
+        //・phoneNumber
+        const checkUser = await prisma.user.findUnique({
+            where:{
+                id:user.id
+            }
+        });
+        if(!checkUser)return {errMsg:'Something went wrong.'};//checkUserの型を確定させる
+        const headNumber7 = phoneNumber.slice(0,7);
+        const lastNumber4 = phoneNumber.slice(-4);
+        const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
+        const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
+        if(lastNumber4===hashedLastNumber4){
+            try{
+                const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
+                if(result)return {errMsg:'The same phone number as the one currently registered.'};
+            }catch(err){
+                throw err;
+            }
+        }
 
         //////////
         //■[ transaction ]

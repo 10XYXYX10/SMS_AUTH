@@ -8,10 +8,10 @@ import { sendSmsAuth } from "@/lib/vonage/function";
 
 export async function PUT(request: NextRequest) {
     try{
-        //////////
-        //■[ rateLimit ] ← 何度も更新されたら、vonageの利用料金が嵩むのでrateLimitで保護
-        const rateLimitResult = await rateLimit()
-        if(!rateLimitResult.success) return NextResponse.json( {message:rateLimitResult.message}, {status:429});
+        // //////////
+        // //■[ rateLimit ] ← 何度も更新されたら、vonageの利用料金が嵩むのでrateLimitで保護
+        // const rateLimitResult = await rateLimit()
+        // if(!rateLimitResult.success) return NextResponse.json( {message:rateLimitResult.message}, {status:429});
 
         //////////
         //■[ セキュリティー ]
@@ -34,24 +34,24 @@ export async function PUT(request: NextRequest) {
         //////////
         //■[ 現在の電話番号の値と比較～同じなら更新不要 ]
         //・phoneNumber
-        const checkUser = await prisma.user.findUnique({
-            where:{
-                id:userId
-            }
-        });
-        if(!checkUser)return {errMsg:'Something went wrong.'};//checkUserの型を確定させる
-        const headNumber7 = phoneNumber.slice(0,7);
-        const lastNumber4 = phoneNumber.slice(-4);
-        const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
-        const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
-        if(lastNumber4===hashedLastNumber4){
-            try{
-                const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
-                if(result)return {errMsg:'The same phone number as the one currently registered.'};
-            }catch(err){
-                throw err;
-            }
-        }
+        // const checkUser = await prisma.user.findUnique({
+        //     where:{
+        //         id:userId
+        //     }
+        // });                
+        // if(!checkUser)return NextResponse.json( {message:'Something went wrong.'}, {status:500});//checkUserの型を確定させる
+        // const headNumber7 = phoneNumber.slice(0,7);
+        // const lastNumber4 = phoneNumber.slice(-4);
+        // const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
+        // const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
+        // if(lastNumber4===hashedLastNumber4){
+        //     try{
+        //         const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
+        //         if(result)return NextResponse.json( {message:'The same phone number as the one currently registered.'}, {status:400});
+        //     }catch(err){
+        //         throw err;
+        //     }
+        // }
 
         //////////
         //■[ transaction ]
@@ -134,15 +134,15 @@ export async function PATCH(request: NextRequest) {
             }
         });
         //Userが存在しない
-        if(!checkUser)return { errMsg:`Something went wrong. Please try again.`};
+        if(!checkUser)return NextResponse.json( {message:'Something went wrong. Please try again.'}, {status:500});
         //認証パスワードが違う
-        if(checkUser.authenticationPassword!==Number(authenticationPassword))return { errMsg:'Authentication password is incorrect.'};
+        if(checkUser.authenticationPassword!==Number(authenticationPassword))return NextResponse.json( {message:'Authentication password is incorrect.'}, {status:400});
         //経過時間の検証：3分以上経過していたらエラーとする
         const beforeTime = checkUser.updatedAt;
         const currentTime = new Date();
         const elapsedMilliseconds = currentTime.getTime() - beforeTime.getTime();// beforeTimeから現在の日時までの経過時間(ミリ秒単位)を計算
         const elapsedMinutes = elapsedMilliseconds / (1000 * 60);// 経過時間を分単位に変換
-        if (elapsedMinutes >= 3)return { errMsg:'More than 3 minutes have passed. Please try again.'};
+        if (elapsedMinutes >= 3)return NextResponse.json( {message:'More than 3 minutes have passed. Please try again.'}, {status:408});//408 Request Timeout
 
         //////////
         //■[ 電話番号を更新 ]
