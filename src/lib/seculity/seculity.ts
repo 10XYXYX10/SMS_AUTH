@@ -2,7 +2,9 @@ import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { AuthUser } from '@/lib/types';
 import * as jose from 'jose';//middlewareで動かす場合、jsonwebtokenではエラーとなる
+
 const jwtKeyFromEnv = process.env.JWT_HASH_KEY as string;
+const jwtKeyUint8Array = new TextEncoder().encode(jwtKeyFromEnv);
 
 //認証パスワード：6桁のランダムな数値
 export const generateRandomNumber6 = ():number => {
@@ -10,10 +12,8 @@ export const generateRandomNumber6 = ():number => {
 }
 
 export const jwtAccessTokenEncode = async({
-    jwtKey,
     objectData
 }:{
-    jwtKey:string;
     objectData:AuthUser;
 }):Promise<{
     result:boolean;
@@ -21,7 +21,6 @@ export const jwtAccessTokenEncode = async({
     data:string;
 }> => {
     try{
-        const jwtKeyUint8Array = new TextEncoder().encode(jwtKey);// ← 関数の外で処理するよう修正した方が良いです
         const token = await new jose.SignJWT(objectData)
             .setProtectedHeader({ alg: 'HS256' })
             .setExpirationTime('2h')
@@ -42,10 +41,8 @@ export const jwtAccessTokenEncode = async({
 }
 
 export const jwtAccessTokenDecode = async ({
-    jwtKey,
     jwtEncoded
 }:{
-    jwtKey:string;
     jwtEncoded:string;
 }):Promise<{
     result:boolean;
@@ -53,7 +50,6 @@ export const jwtAccessTokenDecode = async ({
     data:string|jose.JWTPayload;
 }> => {
     try{
-        const jwtKeyUint8Array = new TextEncoder().encode(jwtKey);// ← 関数の外で処理するよう修正した方が良いです
         const { payload } = await jose.jwtVerify(jwtEncoded, jwtKeyUint8Array);
         return {
             result:true,
@@ -83,7 +79,7 @@ export const security = async (jwtEncodedStr?:string):Promise<{
         const jwtEncoded = jwtEncodedStr ? jwtEncodedStr : (await cookies()).get('accessToken')?.value;
         if(!jwtEncoded)throw new Error('Authentication error.');
 
-        const jwtDecodeResult = await jwtAccessTokenDecode({jwtKey:jwtKeyFromEnv,jwtEncoded});
+        const jwtDecodeResult = await jwtAccessTokenDecode({jwtEncoded});
         if(!jwtDecodeResult.result){
             if(jwtEncoded && !jwtEncodedStr)(await cookies()).delete('accessToken');
             throw new Error('Authentication error.' + jwtDecodeResult.messag);
@@ -152,7 +148,7 @@ export const saveAccessTokenInCookies = async({
     try{
         //////////
         //■[ jwtトークン生成 ]
-        const {result,messag,data} = await jwtAccessTokenEncode({jwtKey:jwtKeyFromEnv,objectData:{id,name}});
+        const {result,messag,data} = await jwtAccessTokenEncode({objectData:{id,name}});
         if(!result)throw new Error(messag);
         const token = data;
 

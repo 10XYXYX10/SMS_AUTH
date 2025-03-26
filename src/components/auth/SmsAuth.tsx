@@ -1,6 +1,6 @@
 import { ChangeEvent, useActionState, useState } from "react";
 import AlertError from '../AlertError';
-import { smsAuth } from '@/actions/authFunctions';
+import { smsAuth } from '@/actions/authActions';
 import { validationForAuthenticationPassword } from "@/lib/seculity/validation";
 
 const SmsAuth = ({

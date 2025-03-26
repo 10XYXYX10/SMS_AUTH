@@ -1,6 +1,6 @@
 import { ChangeEvent, useActionState, useState } from "react";
 import AlertError from '../AlertError';
-import { resetPassConfirm } from '@/actions/resetPassFunctions';
+import { resetPassConfirm } from '@/actions/resetPassActions';
 import { validationForAuthenticationPassword, validationForPassword } from "@/lib/seculity/validation";
 
 const ResetPassConfirm = ({

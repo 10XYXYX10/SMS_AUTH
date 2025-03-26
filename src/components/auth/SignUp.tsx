@@ -1,6 +1,6 @@
 import { ChangeEvent, useActionState, useState } from "react";
 import AlertError from '../AlertError';
-import { signUp } from '@/actions/authFunctions';
+import { signUp } from '@/actions/authActions';
 import SmsAuth from './SmsAuth';
 import { validationForPassword, validationForPhoneNumber, validationForWord } from "@/lib/seculity/validation";
 
@@ -111,8 +111,8 @@ export default function SignUp() {
                             <div className='flex items-center justify-between'> 
                                 <button
                                     className={`
-                                    bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
-                                    ${isPending&&'cursor-not-allowed'}
+                                        bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
+                                        ${isPending&&'cursor-not-allowed'}
                                     `}
                                     disabled={isPending}
                                     type="submit"

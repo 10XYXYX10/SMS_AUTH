@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import UserIcon from './UserIcon'
-import { loginCheck } from '@/actions/authFunctions';
+import { loginCheck } from '@/actions/authActions';
 
 const Header = async() => {
     //*https://nextjs.org/docs/app/api-reference/functions/cookies

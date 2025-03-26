@@ -1,14 +1,15 @@
-import { getPhoneLastNumber } from "@/actions/phoneActions"
-import EditPhoneForm from "./EditPhoneForm";
+import { getPhoneLastNumber } from "@/lib/prisma/getFunctions";
+import EditPhoneRequest from "./EditPhoneRequest";
 
 const EdidPhoneSc = async({
     userId
  }:{
     userId:number
  }) => {
-    const { success,errMsg,phoneLastNumber} = await getPhoneLastNumber({userId});
-    if(!success || !phoneLastNumber)throw new Error(errMsg ? errMsg : 'Something went wrong.');
+   //await new Promise((resolve) => setTimeout(resolve, 6000))
+   const { success,errMsg,phoneLastNumber} = await getPhoneLastNumber({userId});
+   if(!success || !phoneLastNumber)throw new Error(errMsg ? errMsg : 'Something went wrong.');
 
-    return <EditPhoneForm phoneLastNumber={phoneLastNumber}/>
+   return <EditPhoneRequest phoneLastNumber={phoneLastNumber}/>
 }
 export default EdidPhoneSc

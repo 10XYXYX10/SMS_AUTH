@@ -1,0 +1,8 @@
+NEXT_PUBLIC_APP_URL='http://localhost:3000'
+NEXT_PUBLIC_API_URL='http://localhost:3000/api'
+DATABASE_URL="postgresql://smsauth:smsauth@localhost:5434/smsauth?schema=public"
+JWT_HASH_KEY='jwtHashKey'#任意のランダムな半角英数字の文字列
+VonageApiKey='yourVonageApiKey'
+VonageApiSecret='yourVonageApiSecret'
+UPSTASH_REDIS_REST_URL='https://yourEndpoint'
+UPSTASH_REDIS_REST_TOKEN='yourPassword'

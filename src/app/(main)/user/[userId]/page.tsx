@@ -8,11 +8,11 @@ const UserPage = async (
 ) => {
   const params = await props.params;
   const userId = Number(params.userId);
-  if(!userId)notFound();
+  if(isNaN(userId))notFound();
   
   return (
     <div>
-        <h2 className="text-center text-lg sm:text-2xl font-bold mt-5">ログイン成功！！</h2>
+        <h2 className="text-center text-lg sm:text-2xl font-bold mt-5">userId={userId}：ログイン成功！！</h2>
         <div className="p-3 flex justify-center">
           <Image
             className="overflow-hidden rounded-full"

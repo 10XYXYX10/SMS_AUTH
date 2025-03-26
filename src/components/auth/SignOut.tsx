@@ -1,6 +1,6 @@
 'use client'
 import { useActionState, useEffect } from "react";
-import { signOut } from "@/actions/authFunctions";
+import { signOut } from "@/actions/authActions";
 import { IconLogout2 } from "@tabler/icons-react";
 
 const SignOut = () => {

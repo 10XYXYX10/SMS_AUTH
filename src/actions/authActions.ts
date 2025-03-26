@@ -1,13 +1,13 @@
 'use server'
 import { validationForAuthenticationPassword, validationForPassword, validationForPhoneNumber, validationForWord } from "@/lib/seculity/validation";
 import { generateRandomNumber6, saveAccessTokenInCookies, security } from "@/lib/seculity/seculity";
+import { sendSmsAuth } from "@/lib/vonage/function";
 import prisma from "@/lib/prisma";
-import { SignFormState, AuthUser} from "@/lib/types";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { SignFormState, AuthUser} from "@/lib/types";
 import * as bcrypt from 'bcrypt';
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
-import { sendSmsAuth } from "@/lib/vonage/function";
 import { rateLimit } from "@/lib/seculity/upstash";
 
 const phoneNumberOrPasswordErr = 'The value you entered is incorrect. Please try again.';//攻撃されることを想定し、どちらが間違っていたか予測がつかないように
@@ -33,12 +33,16 @@ export const loginCheck = async ():Promise<{
 }
 
 //新規User作成
-export const signUp = async (state: SignFormState, formData: FormData):Promise<SignFormState> => {
+export const signUp = async (
+    state: SignFormState, 
+    formData: FormData
+ ):Promise<SignFormState> => {
     try{
         //////////
         //■[ rateLimit ]
         const {success,message} = await rateLimit()
         if(!success) return {...state, errMsg:message};
+        //return {success:false, errMsg:'XXX'};//テスト:rateLimit
 
         //////////
         //■[ formData ]
@@ -50,7 +54,7 @@ export const signUp = async (state: SignFormState, formData: FormData):Promise<S
         if (!name || !phoneNumber || !password) return {...state, errMsg:'Bad request error.'};
 
         //////////
-        //■[ validation ]
+        //■[ validation ]:正規ルート外からのリクエストに備えての保険
         //・name
         let result = validationForWord(name);
         if(!result.result) return {...state, errMsg:'Bad request error.'};
@@ -79,7 +83,7 @@ export const signUp = async (state: SignFormState, formData: FormData):Promise<S
         //・phoneNumber
         const headNumber7 = phoneNumber.slice(0,7);
         const endNumber4 = phoneNumber.slice(-4);
-        const hashedPhoneNumber = await bcrypt.hash(headNumber7, 10) + endNumber4;
+        const hashedPhoneNumber = await bcrypt.hash(headNumber7, 11) + endNumber4;
 
         //////////
         //■[ 6桁の認証パスワードを生成 ]
@@ -117,11 +121,9 @@ export const signUp = async (state: SignFormState, formData: FormData):Promise<S
         return {success:true, errMsg:''};
         
     }catch(err){
-        let errMsg = `Internal Server Error.`;
+        let errMsg = err instanceof Error ? err.message : `Internal Server Error.`;
         if (err instanceof PrismaClientKnownRequestError && err.code==='P2002') {// Unique制約違反のエラー
             errMsg = 'That name cannot be used. Please try another one.';
-        }else if(err instanceof Error){
-            errMsg = err.message
         }
         //////////
         //■[ return(処理失敗) ]
@@ -131,7 +133,10 @@ export const signUp = async (state: SignFormState, formData: FormData):Promise<S
 
 
 //ログイン
-export const signIn = async (state: SignFormState, formData: FormData):Promise<SignFormState> => {
+export const signIn = async (
+    state: SignFormState, 
+    formData: FormData
+ ):Promise<SignFormState> => {
     try{
         //////////
         //■[ rateLimit ]
@@ -148,7 +153,7 @@ export const signIn = async (state: SignFormState, formData: FormData):Promise<S
         if (!name || !phoneNumber || !password) return {...state, errMsg:'Bad request error.'};
 
         //////////
-        //■[ validation ]
+        //■[ validation ]:正規ルート外からのリクエストに備えての保険
         //・name
         let result = validationForWord(name);
         if(!result.result) return {...state, errMsg:'Bad request error.'};
@@ -169,6 +174,7 @@ export const signIn = async (state: SignFormState, formData: FormData):Promise<S
             }
         });
         if(!checkUser)return {...state, errMsg:phoneNumberOrPasswordErr}; 
+        //・phoneNumber
         const headNumber7 = phoneNumber.slice(0,7);
         const lastNumber4 = phoneNumber.slice(-4);
         const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
@@ -189,12 +195,14 @@ export const signIn = async (state: SignFormState, formData: FormData):Promise<S
         }
 
         //////////
+        //■[ 6桁の認証パスワードを生成 ]
+        const randomNumber6 = generateRandomNumber6();
+
+        //////////
         //■[ transaction ]
         await prisma.$transaction(async (prismaT) => {
             //////////
             //■[ SMS認証 ]
-            //・6桁の乱数を生成
-            const randomNumber6 = generateRandomNumber6();
             //・User の authenticationPassword & updatedAt を更新
             await prismaT.user.update({
                 where:{id:checkUser.id},
@@ -238,6 +246,8 @@ export const smsAuth = async (
     try{
         //////////
         //■[ rateLimit ]
+        // SMSメッセージの送信をするわけではないので、直接的な費用はかからない。
+        // が、ブールトフォースなどで、無理やり認証を突破されても厄介なので、一応保護。
         const {success,message} = await rateLimit()
         if(!success) return {...state, errMsg:message};
         
@@ -250,7 +260,7 @@ export const smsAuth = async (
         if(!name || !authenticationPassword)return {errMsg:'Bad request error.'}
 
         //////////
-        //■[ validation ]
+        //■[ validation ]:正規ルート外からのリクエストに備えての保険
         //・name
         let result = validationForWord(name);
         if(!result.result) return {errMsg:'Bad request error.'};
@@ -268,7 +278,7 @@ export const smsAuth = async (
         //Userが存在しない
         if(!checkUser)return {errMsg:`Something went wrong. Please try again.`};
         userId = checkUser.id;
-        //ログインを試みたが、メールアドレスの認証が未完了
+        //ログインを試みたが、電話番号の認証が未完了
         if(typeValue=='SignIn' && !checkUser.verifiedPhoneNumber)return {errMsg:'That user is disabled. SMS authentication has not been completed.'};
         //認証パスワードが違う
         if(checkUser.authenticationPassword!==Number(authenticationPassword))return {errMsg:'Authentication password is incorrect.'};
@@ -282,7 +292,6 @@ export const smsAuth = async (
           return {errMsg:'More than 3 minutes have passed. Please try again.'};
         }
 
-        console.log('smsAuth-4')
         //////////
         //■[ 新規作成時のSMS認証なら、verifiedPhoneNumber:true に更新 ]
         if(typeValue==='SignUp'){

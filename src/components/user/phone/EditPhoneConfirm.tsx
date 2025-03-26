@@ -62,12 +62,14 @@ const EditPhoneConfirm = ({
             let message = 'Something went wrong. Please try again.';
             if (axios.isAxiosError(err)) {
                 if(err.response?.data.message)message = err.response.data.message;
-                //401,Authentication failed.
-                if(err.response?.status && err.response.status===401){
-                    setLoading(false);
-                    alert(message);
-                    router.push('/auth');
-                    return;
+                if(err.response?.status){
+                    const statusCode = err.response.status;
+                    if(statusCode===401){//401,Authentication failed.
+                        alert(message);
+                        return router.push('/auth');             
+                    }else if(statusCode===408){//408 Request Timeout
+                        setProcessNum(1);
+                    }
                 }
             } else if (err instanceof Error) {
                 message = err.message;

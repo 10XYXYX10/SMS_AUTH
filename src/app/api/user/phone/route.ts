@@ -1,6 +1,6 @@
-import prisma from "@/lib/prisma";
 import { generateRandomNumber6, security } from "@/lib/seculity/seculity";
 import { rateLimit } from "@/lib/seculity/upstash";
+import prisma from "@/lib/prisma";
 import { validationForAuthenticationPassword, validationForPhoneNumber } from "@/lib/seculity/validation";
 import { NextRequest, NextResponse } from "next/server";
 import * as bcrypt from 'bcrypt';
@@ -8,10 +8,10 @@ import { sendSmsAuth } from "@/lib/vonage/function";
 
 export async function PUT(request: NextRequest) {
     try{
-        // //////////
-        // //■[ rateLimit ] ← 何度も更新されたら、vonageの利用料金が嵩むのでrateLimitで保護
-        // const rateLimitResult = await rateLimit()
-        // if(!rateLimitResult.success) return NextResponse.json( {message:rateLimitResult.message}, {status:429});
+        //////////
+        //■[ rateLimit ] ← 何度も更新されたら、vonageの利用料金が嵩むのでrateLimitで保護
+        const rateLimitResult = await rateLimit()
+        if(!rateLimitResult.success) return NextResponse.json( {message:rateLimitResult.message}, {status:429});//429 Too Many Requests
 
         //////////
         //■[ セキュリティー ]
@@ -34,32 +34,35 @@ export async function PUT(request: NextRequest) {
         //////////
         //■[ 現在の電話番号の値と比較～同じなら更新不要 ]
         //・phoneNumber
-        // const checkUser = await prisma.user.findUnique({
-        //     where:{
-        //         id:userId
-        //     }
-        // });                
-        // if(!checkUser)return NextResponse.json( {message:'Something went wrong.'}, {status:500});//checkUserの型を確定させる
-        // const headNumber7 = phoneNumber.slice(0,7);
-        // const lastNumber4 = phoneNumber.slice(-4);
-        // const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
-        // const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
-        // if(lastNumber4===hashedLastNumber4){
-        //     try{
-        //         const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
-        //         if(result)return NextResponse.json( {message:'The same phone number as the one currently registered.'}, {status:400});
-        //     }catch(err){
-        //         throw err;
-        //     }
-        // }
+        const checkUser = await prisma.user.findUnique({
+            where:{
+                id:userId
+            },
+            select:{hashedPhoneNumber:true}
+        });                
+        if(!checkUser)return NextResponse.json( {message:'Something went wrong.'}, {status:500});//checkUserの型を確定させる
+        const headNumber7 = phoneNumber.slice(0,7);
+        const lastNumber4 = phoneNumber.slice(-4);
+        const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
+        const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
+        if(lastNumber4===hashedLastNumber4){
+            try{
+                const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
+                if(result)return NextResponse.json( {message:'The same phone number as the one currently registered.'}, {status:400});
+            }catch(err){
+                throw err;
+            }
+        }
+
+        //////////
+        //■[ 6桁の乱数を生成 ]
+        const randomNumber6 = generateRandomNumber6();
 
         //////////
         //■[ transaction ]
         await prisma.$transaction(async (prismaT) => {
             //////////
             //■[ SMS認証 ]
-            //・6桁の乱数を生成
-            const randomNumber6 = generateRandomNumber6();
             //・User の authenticationPassword & updatedAt を更新
             await prismaT.user.update({
                 where:{id:userId},
@@ -97,9 +100,9 @@ export async function PUT(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
     try{
         //////////
-        //■[ rateLimit ] ← 何度も更新されたら、vonageの利用料金が嵩むのでrateLimitで保護
+        //■[ rateLimit ] ← vonageを利用するわけではないのでの利用料金の心配はないが、ブルートフォースで突破されても厄介なので一応レートリミット
         const rateLimitResult = await rateLimit()
-        if(!rateLimitResult.success) return NextResponse.json( {message:rateLimitResult.message}, {status:429});
+        if(!rateLimitResult.success) return NextResponse.json( {message:rateLimitResult.message}, {status:429});//429 Too Many Requests
 
         //////////
         //■[ セキュリティー ]

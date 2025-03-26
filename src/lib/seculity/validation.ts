@@ -4,7 +4,7 @@ export const validationForWord = (str:string,limit:number=20): {result:boolean, 
     if (str.length===0 || str.length>limit) return {result:false, message:`1～${limit}字以内の文字列を入力して下さい`}
 	//htmlエンティティ
 	const pattern = /[<>/&|"'`;=%?!#@*\\\+\-]/;
-	if(pattern.test(str))return{result:false, message:'半角「<>/&|"\'`;=%?!#@*\\+-」は使用不可。使用する場合、全角で！'};
+	if(pattern.test(str))return{result:false, message:'「<>/&|"\'`;=%?!#@*\\+-」は使用不可'};
     // 成功!!
     return {result:true,message:'success'}
 }

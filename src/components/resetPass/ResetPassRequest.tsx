@@ -1,9 +1,9 @@
 'use client'
 import { ChangeEvent, useActionState, useState } from "react";
 import AlertError from '../AlertError';
-import { resetPassRequest } from '@/actions/resetPassFunctions';
-import { validationForPhoneNumber, validationForWord } from "@/lib/seculity/validation";
+import { resetPassRequest } from '@/actions/resetPassActions';
 import ResetPassConfirm from "./ResetPassConfirm";
+import { validationForPhoneNumber, validationForWord } from "@/lib/seculity/validation";
 
 export default function ResetPassRequest() {
     const [state, formAction, isPending] = useActionState(

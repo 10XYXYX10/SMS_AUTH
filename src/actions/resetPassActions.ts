@@ -1,13 +1,13 @@
 'use server'
-import prisma from "@/lib/prisma";
+import { validationForAuthenticationPassword, validationForPassword, validationForPhoneNumber, validationForWord } from "@/lib/seculity/validation";
 import { generateRandomNumber6, saveAccessTokenInCookies } from "@/lib/seculity/seculity";
-import { rateLimit } from "@/lib/seculity/upstash";
-import { validationForAuthenticationPassword, validationForPhoneNumber, validationForWord } from "@/lib/seculity/validation";
 import { sendSmsAuth } from "@/lib/vonage/function";
+import prisma from "@/lib/prisma";
 import * as bcrypt from 'bcrypt';
+import { rateLimit } from "@/lib/seculity/upstash";
 import { redirect } from "next/navigation";
 
-const phoneNumberOrPasswordErr = 'The value you entered is incorrect. Please try again.';//攻撃されることを想定し、どちらが間違っていたか予測がつかないように
+const nameOrPhoneNumberErr = 'The value you entered is incorrect. Please try again.';//攻撃されることを想定し、どちらが間違っていたか予測がつかないように
 
 //■[ resetPassRequest ]
 type ResetPassRequestState = {
@@ -50,23 +50,25 @@ export const resetPassRequest = async (
                 verifiedPhoneNumber:true
             }
         });
-        if(!checkUser)return {...state, errMsg:phoneNumberOrPasswordErr}
+        if(!checkUser)return {...state, errMsg:nameOrPhoneNumberErr}
         try{
             const headNumber7 = phoneNumber.slice(0,7)
             const hashedHeadNumber = checkUser.hashedPhoneNumber.slice(0,-4)
             const result = await bcrypt.compare(headNumber7, hashedHeadNumber);
-            if(!result)return {...state, errMsg:phoneNumberOrPasswordErr}
+            if(!result)return {...state, errMsg:nameOrPhoneNumberErr}
         }catch(err){
             throw err;
         }
+
+        //////////
+        //■[ 6桁の乱数を生成 ]
+        const randomNumber6 = generateRandomNumber6();
 
         //////////
         //■[ transaction ]
         await prisma.$transaction(async (prismaT) => {
             //////////
             //■[ SMS認証 ]
-            //・6桁の乱数を生成
-            const randomNumber6 = generateRandomNumber6();
             //・User の authenticationPassword & updatedAt を更新
             await prismaT.user.update({
                 where:{id:checkUser.id},
@@ -125,6 +127,9 @@ export const resetPassConfirm = async (
         //・name
         let result = validationForWord(name);
         if(!result.result) return {errMsg:'Bad request error.'};
+        //・password
+        result = validationForPassword(password);
+        if(!result.result) return {errMsg:'Bad request error.'};
         //・authenticationPassword
         result = validationForAuthenticationPassword(authenticationPassword);
         if(!result.result) return {errMsg:'Bad request error.'};
@@ -133,13 +138,13 @@ export const resetPassConfirm = async (
         //■[ userチェック～経過時間の検証 ]
         const checkUser = await prisma.user.findUnique({
           where:{
-            name
+            name,
           }
         });
         //Userが存在しない
         if(!checkUser)return {errMsg:`Something went wrong. Please try again.`};
         userId = checkUser.id;
-        //メールアドレスの認証が未完了
+        //電話番号の認証が未完了
         if(!checkUser.verifiedPhoneNumber)return {errMsg:'That user is disabled. SMS authentication has not been completed.'};
         //認証パスワードが違う
         if(checkUser.authenticationPassword!==Number(authenticationPassword))return {errMsg:'Authentication password is incorrect.'};
@@ -163,7 +168,6 @@ export const resetPassConfirm = async (
 
         //////////
         //■[ accessToken をサーバーサイドcookiesに保存 ]
-        console.log({id:userId, name:checkUser.name})
         const savedResult = await saveAccessTokenInCookies({id:userId, name:checkUser.name});
         if(!savedResult.result)throw new Error(savedResult.message);
         

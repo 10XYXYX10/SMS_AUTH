@@ -21,7 +21,7 @@ export const middleware = async(request: NextRequest) => {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/auth';
     const response = NextResponse.redirect(redirectUrl)
-    if(request.cookies.has('accessToken')){
+    if(request.cookies.has('accessToken')){//accessTokenがfalsy値であっても確実に削除されるように、「jwtEncoded」ではなく「request.cookies.has('accessToken')」で判定
       response.cookies.delete('accessToken')//middlewareを経由してredirectする場合、responseからcookieを削除しないと、削除に失敗する。
     }
     return response;

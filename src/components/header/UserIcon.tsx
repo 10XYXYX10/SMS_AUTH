@@ -16,7 +16,7 @@ const UserIcon = ({
         <div className='flex space-x-3'>
             {user.name && <SignOut/>}
 
-            {user && pathname.startsWith('/user')&&(
+            {user.name && pathname.startsWith('/user')&&(
                 <Link
                     href={`/user/${user.id}/phone`}
                     className='p-2 hover:opacity-75 inline-block my-1'
@@ -26,7 +26,8 @@ const UserIcon = ({
             )}
 
             <Link
-                href={user.id ? `/user/${user.id}` : '/user'}
+                href={user.id ? `/user/${user.id}` : '/auth'}
+                //href={user.id ? `/user/${user.id}` : '/user'}「/user」としても、未ログインなら、middlewareの認証で/authへとリダイレクトされる
                 className={`rounded-full p-2 hover:opacity-75 inline-block my-1 ${pathname.startsWith('/user')?'bg-red-400':'bg-gray-400'}`}
             >
                 {user.name

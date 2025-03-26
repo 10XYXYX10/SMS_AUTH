@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import SpinnerModal from "@/components/SpinnerModal";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL as string;
 
-export default function EditPhoneForm({
+export default function EditPhoneRequest({
     phoneLastNumber
  }:{
     phoneLastNumber:string
@@ -17,7 +17,7 @@ export default function EditPhoneForm({
     const [loading,setLoading] = useState(false);
     const [error,setError] = useState('');
     const [phoneForm,setPhoneForm] = useState({
-      phoneNumber:['',''],//[値,エラー文字]
+      phoneNumber:['',''],//[値,バリデーションエラー文字]
     });
     const [processNum,setProcessNum] = useState<1|2>(1);
 
@@ -77,7 +77,7 @@ export default function EditPhoneForm({
         <div className="flex items-center justify-center mt-5">
             <div className="flex flex-col items-center justify-center w-full max-w-md">
                 {loading && <SpinnerModal/>}
-                {error && <AlertError errMessage={error} reloadBtFlag={true}/>}
+                {error && <AlertError errMessage={error} reloadBtFlag={false}/>}
                 {processNum===1
                     ?(<> 
                         <form
