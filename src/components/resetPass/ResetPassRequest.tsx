@@ -90,12 +90,12 @@ export default function ResetPassRequest() {
                             </div>
                             <div className='flex items-center justify-between'> 
                                 <button
-                                    className={`
-                                    bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
-                                    ${isPending&&'cursor-not-allowed'}
-                                    `}
-                                    disabled={isPending}
                                     type="submit"
+                                    disabled={isPending}
+                                    className={`
+                                     bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline 
+                                        ${isPending&&'cursor-not-allowed'}
+                                    `}
                                 >
                                     {isPending ? '・・Loading・・' : 'reset password'}
                                 </button>

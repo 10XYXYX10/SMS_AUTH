@@ -139,7 +139,9 @@ export async function PATCH(request: NextRequest) {
         //Userが存在しない
         if(!checkUser)return NextResponse.json( {message:'Something went wrong. Please try again.'}, {status:500});
         //認証パスワードが違う
-        if(checkUser.authenticationPassword!==Number(authenticationPassword))return NextResponse.json( {message:'Authentication password is incorrect.'}, {status:400});
+        if(checkUser.authenticationPassword!==Number(authenticationPassword)){
+            return NextResponse.json( {message:'Authentication password is incorrect.'}, {status:400});
+        }
         //経過時間の検証：3分以上経過していたらエラーとする
         const beforeTime = checkUser.updatedAt;
         const currentTime = new Date();

@@ -1,4 +1,8 @@
-import { ChangeEvent, useActionState, useState } from "react";
+import { 
+    ChangeEvent,
+    useActionState, 
+    useState 
+} from "react";
 import AlertError from '../AlertError';
 import { smsAuth } from '@/actions/authActions';
 import { validationForAuthenticationPassword } from "@/lib/seculity/validation";
@@ -44,7 +48,6 @@ const SmsAuth = ({
         //■[ smsAuthを実行 ]
         formAction(formData)
     }
-
 
     return(<>
         <div className="flex items-center justify-center">

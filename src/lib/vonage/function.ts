@@ -5,7 +5,7 @@ const api_secret = process.env.VonageApiSecret;
 export const sendSmsAuth = async ({
   phoneNumber,
   text,
-  from = 'fromNext',
+  from = 'SmsAuth',//＊全角や日本語の入力,文字が長すぎると、SMS送信に失敗する場合があるので注意
 }: {
   phoneNumber: string,
   text: string,
@@ -13,25 +13,17 @@ export const sendSmsAuth = async ({
 }): Promise<{ result: boolean, message: string }> => {
   try {
     const modifiedNumber = phoneNumber.replace(/^0/, '81'); // 冒頭の「0」を日本の国番号「81」に変換
-    const to = modifiedNumber;
-
-    console.log(
-      api_key,
-      api_secret,
-      to,
-      from,
-      text)
 
     const {data} = await axios.post('https://rest.nexmo.com/sms/json', {
       api_key,
       api_secret,
-      to,
+      to:modifiedNumber,
       from,
       text
     });
 
     if (data.messages[0].status !== '0')throw new Error(data.messages[0]['error-text'])
-    console.log(`cost:${data.messages[0]['message-price']}`)
+    //console.log(`cost:${data.messages[0]['message-price']}`)
 
     return {
       result: true,

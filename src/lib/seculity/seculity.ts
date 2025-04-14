@@ -70,7 +70,7 @@ export const security = async (jwtEncodedStr?:string):Promise<{
     result:boolean;
     data:AuthUser|null;
     message:string,
-}> => {
+ }> => {
     try{
         // await new Promise((resolve) => setTimeout(resolve, 6000))
         
@@ -81,6 +81,7 @@ export const security = async (jwtEncodedStr?:string):Promise<{
 
         const jwtDecodeResult = await jwtAccessTokenDecode({jwtEncoded});
         if(!jwtDecodeResult.result){
+            //「jwtEncodedStrが有効」＝middlewareからこのseculity関数が実行された。middlewareでは、next/headersのcookiesが上手く動作しない。
             if(jwtEncoded && !jwtEncodedStr)(await cookies()).delete('accessToken');
             throw new Error('Authentication error.' + jwtDecodeResult.messag);
         }

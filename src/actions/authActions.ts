@@ -131,7 +131,6 @@ export const signUp = async (
     }
 };
 
-
 //ログイン
 export const signIn = async (
     state: SignFormState, 
@@ -242,7 +241,7 @@ export const smsAuth = async (
     state: {errMsg:string},
     formData: FormData
 ):Promise<{errMsg:string}> => {
-    let userId:number = 0;
+    let userId:number = 0;//処理成功時、try-catch構文の外で、「/user/<userId>」のURLパスへリダイレクトするために使います
     try{
         //////////
         //■[ rateLimit ]
@@ -305,7 +304,7 @@ export const smsAuth = async (
 
         //////////
         //■[ accessToken をサーバーサイドcookiesに保存 ]
-        console.log({id:userId, name:checkUser.name})
+        //console.log({id:userId, name:checkUser.name})
         const savedResult = await saveAccessTokenInCookies({id:userId, name:checkUser.name});
         if(!savedResult.result)throw new Error(savedResult.message);
         
@@ -321,7 +320,6 @@ export const smsAuth = async (
     redirect(`/user/${userId}`);
 }
 
-
 export const signOut = async(state: string) => {
     try{
         //////////
@@ -334,7 +332,6 @@ export const signOut = async(state: string) => {
         state = err instanceof Error ?  err.message : `Internal Server Error.`
         return state;
     }
-    
     //////////
     //■[ 処理成功時、リダイレクト ]
     //・redirectはtry-catchの外で実行することが推奨されている:https://nextjs.org/docs/app/building-your-application/routing/redirecting

@@ -52,8 +52,8 @@ const EditPhoneConfirm = ({
             await axios.patch(
                 `${apiUrl}/user/phone`,
                 {
-                    authenticationPassword:authenticationPassword[0],
                     phoneNumber,
+                    authenticationPassword:authenticationPassword[0],
                 }
             );
             alert('Success.')
@@ -90,12 +90,6 @@ const EditPhoneConfirm = ({
                     onSubmit={handleSubmit}
                     className="mt-3 bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md"
                 >
-                    <input
-                        name='phoneNumber'
-                        type='hidden'
-                        required={true}
-                        defaultValue={phoneNumber}
-                    />
                     <div className="mb-4">
                         <label className='block text-gray-700 text-md font-bold'>6桁認証番号<em>*</em></label>
                         <span className='text-xs text-gray-500'>6桁の半角数字を入力して下さい</span>

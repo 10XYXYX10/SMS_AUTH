@@ -4,12 +4,12 @@ import { Redis } from "@upstash/redis";
 
 //////////
 //■[ UpstashでrateLimitを実装 ]
-//＊https://claude.ai/chat/8504a412-36aa-4e6a-b204-908030a3361f
 //・Redisクライアントの作成
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
 });
+
 //・レートリミットの設定（5リクエスト/10分）
 const ratelimitConfig = new Ratelimit({
   redis,
@@ -19,6 +19,7 @@ const ratelimitConfig = new Ratelimit({
   ),
   analytics: true,
 });
+
 //・rateLimit
 export const rateLimit = async():Promise<{
   success:boolean
@@ -56,6 +57,6 @@ export const rateLimit = async():Promise<{
       message:`Too many requests. Please try again after ${Math.ceil((reset - Date.now()) / 1000)} seconds.`
     };
   }
-  // 処理結果を返す
-  return { success: true, message: 'Form submitted successfully' };
+  // 処理結果を返すW
+  return { success: true, message: 'Form submitted successfully.' };
 }

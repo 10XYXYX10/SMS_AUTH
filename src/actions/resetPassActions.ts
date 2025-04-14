@@ -4,8 +4,8 @@ import { generateRandomNumber6, saveAccessTokenInCookies } from "@/lib/seculity/
 import { sendSmsAuth } from "@/lib/vonage/function";
 import prisma from "@/lib/prisma";
 import * as bcrypt from 'bcrypt';
-import { rateLimit } from "@/lib/seculity/upstash";
 import { redirect } from "next/navigation";
+import { rateLimit } from "@/lib/seculity/upstash";
 
 const nameOrPhoneNumberErr = 'The value you entered is incorrect. Please try again.';//攻撃されることを想定し、どちらが間違っていたか予測がつかないように
 
@@ -42,8 +42,8 @@ export const resetPassRequest = async (
         if(!result.result) return {...state, errMsg:'Bad request error.'};
     
         //////////
-        //■[ 認証:phoneNumber ]
-        //・phoneNumber
+        //■[ 認証:user~phoneNumber ]
+        //・user
         const checkUser = await prisma.user.findFirst({
             where:{
                 name,
@@ -51,14 +51,19 @@ export const resetPassRequest = async (
             }
         });
         if(!checkUser)return {...state, errMsg:nameOrPhoneNumberErr}
+        //・phoneNumber
+        const headNumber7 = phoneNumber.slice(0,7);
+        const lastNumber4 = phoneNumber.slice(-4);
+        const hashedHeadNumber7 = checkUser.hashedPhoneNumber.slice(0,-4);
+        const hashedLastNumber4 = checkUser.hashedPhoneNumber.slice(-4);
+        if(lastNumber4!==hashedLastNumber4)return {...state, errMsg:nameOrPhoneNumberErr};
         try{
-            const headNumber7 = phoneNumber.slice(0,7)
-            const hashedHeadNumber = checkUser.hashedPhoneNumber.slice(0,-4)
-            const result = await bcrypt.compare(headNumber7, hashedHeadNumber);
+            const result = await bcrypt.compare(headNumber7, hashedHeadNumber7);
             if(!result)return {...state, errMsg:nameOrPhoneNumberErr}
         }catch(err){
             throw err;
         }
+
 
         //////////
         //■[ 6桁の乱数を生成 ]
@@ -106,7 +111,7 @@ export const resetPassConfirm = async (
     state: {errMsg:string},
     formData: FormData
 ):Promise<{errMsg:string}> => {
-    let userId:number = 0;
+    let userId:number = 0;//tryCatchの外で、リダイレクト関数を使用する際、URLパスに含めるため使用する
     try{
         //////////
         //■[ rateLimit ]
@@ -139,13 +144,12 @@ export const resetPassConfirm = async (
         const checkUser = await prisma.user.findUnique({
           where:{
             name,
+            verifiedPhoneNumber:true//電話番号の認証が完了済み
           }
         });
         //Userが存在しない
         if(!checkUser)return {errMsg:`Something went wrong. Please try again.`};
         userId = checkUser.id;
-        //電話番号の認証が未完了
-        if(!checkUser.verifiedPhoneNumber)return {errMsg:'That user is disabled. SMS authentication has not been completed.'};
         //認証パスワードが違う
         if(checkUser.authenticationPassword!==Number(authenticationPassword))return {errMsg:'Authentication password is incorrect.'};
         //経過時間の検証：3分以上経過していたらエラーとする
@@ -154,7 +158,6 @@ export const resetPassConfirm = async (
         const elapsedMilliseconds = currentTime.getTime() - beforeTime.getTime();// beforeTimeから現在の日時までの経過時間(ミリ秒単位)を計算
         const elapsedMinutes = elapsedMilliseconds / (1000 * 60);// 経過時間を分単位に変換
         if (elapsedMinutes >= 3)return {errMsg:'More than 3 minutes have passed. Please try again.'};
-
         
         //////////
         //■[ passwordをハッシュ化 ~ 更新 ]

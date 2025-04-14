@@ -3,7 +3,7 @@ import EditPhoneSc from "@/components/user/phone/EditPhoneSc";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-const UserPhonePage = async(props:{params: Promise<{postId:string,userId:string}>}) => {
+const UserPhonePage = async(props:{params: Promise<{userId:string}>}) => {
     const params = await props.params;
     const userId = Number(params.userId);
     if(isNaN(userId))notFound();
